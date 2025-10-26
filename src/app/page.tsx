@@ -31,12 +31,21 @@ export default async function Home() {
             </Link>
             <Link
               className="flex max-w-xs flex-col gap-4 rounded-xl bg-white/10 p-4 hover:bg-white/20"
+              href="/profile"
+            >
+              <h3 className="text-2xl font-bold">Profile →</h3>
+              <div className="text-lg">
+                View your profile and all your organization memberships.
+              </div>
+            </Link>
+            <Link
+              className="flex max-w-xs flex-col gap-4 rounded-xl bg-white/10 p-4 hover:bg-white/20"
               href="https://create.t3.gg/en/usage/first-steps"
               target="_blank"
             >
               <h3 className="text-2xl font-bold">Documentation →</h3>
               <div className="text-lg">
-                Learn more about Create T3 App, the libraries it uses, and how
+                Learn more about Create T3 App, libraries it uses, and how
                 to deploy it.
               </div>
             </Link>

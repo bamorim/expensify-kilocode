@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { api } from "~/trpc/react";
+import { PermissionGuard } from "~/lib/authorization";
+import { PERMISSIONS } from "~/server/permissions";
 
 interface OrganizationInfoProps {
   organizationId: string;
@@ -16,6 +18,10 @@ export function OrganizationInfo({ organizationId }: OrganizationInfoProps) {
     isLoading,
     refetch,
   } = api.organization.get.useQuery({ id: organizationId });
+
+  const {
+    data: currentUserRole,
+  } = api.organization.getUserRoleInOrganization.useQuery({ organizationId });
 
   const updateOrganization = api.organization.update.useMutation({
     onSuccess: () => {
@@ -98,12 +104,17 @@ export function OrganizationInfo({ organizationId }: OrganizationInfoProps) {
             </div>
           </div>
           
-          <button
-            onClick={() => setIsEditing(true)}
-            className="rounded-md bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
+          <PermissionGuard
+            role={currentUserRole}
+            permission={PERMISSIONS.ORG_UPDATE}
           >
-            Edit Organization
-          </button>
+            <button
+              onClick={() => setIsEditing(true)}
+              className="rounded-md bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
+            >
+              Edit Organization
+            </button>
+          </PermissionGuard>
         </div>
       )}
     </div>

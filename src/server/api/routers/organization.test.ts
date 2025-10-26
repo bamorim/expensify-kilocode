@@ -402,7 +402,7 @@ describe("organizationRouter", () => {
         expect(error).toBeInstanceOf(TRPCError);
         if (error instanceof TRPCError) {
           expect(error.code).toBe("FORBIDDEN");
-          expect(error.message).toBe("Only admins can update organization details");
+          expect(error.message).toBe("You don't have permission to perform this action");
         }
       }
     });

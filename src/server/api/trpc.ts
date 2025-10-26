@@ -10,9 +10,12 @@
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { ZodError } from "zod";
+import type { PrismaClient } from "@prisma/client";
 
 import { auth } from "~/server/auth";
 import { db } from "~/server/db";
+import { hasPermission, type Permission } from "~/server/permissions";
+import { UserRole } from "@prisma/client";
 
 /**
  * 1. CONTEXT
@@ -131,3 +134,71 @@ export const protectedProcedure = t.procedure
       },
     });
   });
+
+/**
+ * Helper function to get user's role in an organization
+ */
+async function getUserRole(
+  userId: string,
+  organizationId: string,
+  db: PrismaClient
+): Promise<UserRole | null> {
+  const userOrg = await db.userOrganization.findUnique({
+    where: {
+      userId_organizationId: {
+        userId,
+        organizationId,
+      },
+    },
+    select: {
+      role: true,
+    },
+  });
+
+  return userOrg?.role ?? null;
+}
+
+/**
+ * Authorization function to check if user has required permissions for an organization
+ * 
+ * @param db - Prisma client instance
+ * @param userId - User ID to check permissions for
+ * @param organizationId - Organization ID to check permissions in
+ * @param requiredPermissions - Array of permissions required (any one will suffice)
+ * @returns The user's role in the organization
+ * @throws TRPCError if user is not a member or lacks permissions
+ */
+export async function authorize(
+  db: PrismaClient,
+  userId: string,
+  organizationId: string,
+  requiredPermissions: Permission | Permission[]
+): Promise<UserRole> {
+  // Get user's role in the organization
+  const userRole = await getUserRole(userId, organizationId, db);
+
+  if (!userRole) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "You are not a member of this organization",
+    });
+  }
+
+  // Check if user has required permissions
+  const permissions = Array.isArray(requiredPermissions)
+    ? requiredPermissions
+    : [requiredPermissions];
+
+  const hasRequiredPermission = permissions.some(permission =>
+    hasPermission(userRole, permission)
+  );
+
+  if (!hasRequiredPermission) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "You don't have permission to perform this action",
+    });
+  }
+
+  return userRole;
+}

@@ -20,6 +20,7 @@ export default async function OrganizationPage({ params }: OrganizationPageProps
   // Prefetch organization data
   void api.organization.get.prefetch({ id: params.id });
   void api.organization.getMembers.prefetch({ organizationId: params.id });
+  void api.organization.getUserRoleInOrganization.prefetch({ organizationId: params.id });
 
   return (
     <HydrateClient>

@@ -38,6 +38,8 @@ src/server/
 │   ├── trpc.ts              # tRPC configuration and middleware
 │   └── routers/             # Domain-specific routers with business logic
 │       ├── post.ts          # Post-related procedures and logic
+│       ├── organization.ts   # Organization management procedures
+│       ├── user-management.ts # User role management procedures
 │       └── [other-routers]/
 ├── auth/                    # NextAuth configuration
 │   ├── index.ts            # Auth exports
@@ -45,6 +47,7 @@ src/server/
 ├── db/                     # Database configuration
 │   ├── index.ts            # Prisma client
 │   └── __mocks__/          # Test database mocks
+└── permissions.ts           # Role-based permissions system
 ```
 
 #### Client-Side Integration
@@ -117,6 +120,179 @@ export const postRouter = createTRPCRouter({
 - Logic that needs to be reused across different procedures
 - Heavy computational operations that benefit from separation
 
+## Role-Based Access Control (RBAC)
+
+### Permission System
+
+The application implements a comprehensive role-based access control system with two primary roles:
+
+1. **ADMIN** - Full administrative access to organization resources
+2. **MEMBER** - Limited access to organization resources
+
+### Permission Definitions
+
+Permissions are defined in `src/server/permissions.ts`:
+
+```typescript
+export const PERMISSIONS = {
+  // Organization permissions
+  ORG_VIEW: "org:view",
+  ORG_UPDATE: "org:update",
+  ORG_DELETE: "org:delete",
+  
+  // Member management permissions
+  MEMBER_VIEW: "member:view",
+  MEMBER_INVITE: "member:invite",
+  MEMBER_UPDATE_ROLE: "member:update_role",
+  MEMBER_REMOVE: "member:remove",
+  
+  // Expense permissions (for future use)
+  EXPENSE_CREATE: "expense:create",
+  EXPENSE_VIEW_OWN: "expense:view_own",
+  EXPENSE_VIEW_ALL: "expense:view_all",
+  // ... more permissions
+} as const;
+```
+
+### Authorization Middleware
+
+Authorization is implemented through a centralized middleware function in `src/server/api/trpc.ts`:
+
+```typescript
+export async function authorize(
+  db: PrismaClient,
+  userId: string,
+  organizationId: string,
+  requiredPermissions: Permission | Permission[]
+): Promise<UserRole> {
+  // Get user's role in organization
+  const userRole = await getUserRole(userId, organizationId, db);
+  
+  if (!userRole) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "You are not a member of this organization",
+    });
+  }
+  
+  // Check if user has required permissions
+  const permissions = Array.isArray(requiredPermissions)
+    ? requiredPermissions
+    : [requiredPermissions];
+    
+  const hasRequiredPermission = permissions.some(permission =>
+    hasPermission(userRole, permission)
+  );
+  
+  if (!hasRequiredPermission) {
+    throw new TRPCError({
+      code: "FORBIDDEN",
+      message: "You don't have permission to perform this action",
+    });
+  }
+  
+  return userRole;
+}
+```
+
+### Client-Side Authorization
+
+Client-side authorization helpers are provided in `src/lib/authorization.ts`:
+
+```typescript
+// Permission checking functions
+export function canUserPerform(role: UserRole, permission: Permission): boolean;
+export function canUserPerformAny(role: UserRole, permissions: Permission[]): boolean;
+export function canUserPerformAll(role: UserRole, permissions: Permission[]): boolean;
+
+// React hooks for components
+export function usePermission(role: UserRole | undefined, permission: Permission): boolean;
+export function useAnyPermission(role: UserRole | undefined, permissions: Permission[]): boolean;
+
+// Permission guard components
+export function PermissionGuard({ role, permission, fallback, children }: PermissionGuardProps);
+export function AnyPermissionGuard({ role, permissions, fallback, children }: AnyPermissionGuardProps);
+```
+
+## User Management System
+
+### User-Organization Model
+
+The application uses a many-to-many relationship between users and organizations through the UserOrganization model:
+
+```typescript
+model UserOrganization {
+  id        String   @id @default(cuid())
+  userId     String
+  orgId      String   @map("organizationId")
+  role       UserRole  @default(MEMBER)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, orgId])
+}
+```
+
+### User Management Procedures
+
+The user management router provides procedures for role management:
+
+```typescript
+export const userManagementRouter = createTRPCRouter({
+  // Update a user's role in an organization (admin only)
+  updateUserRole: protectedProcedure
+    .input(updateUserRoleSchema)
+    .mutation(async ({ ctx, input }) => {
+      // Authorize user to update roles
+      await authorize(
+        ctx.db,
+        ctx.session.user.id,
+        input.organizationId,
+        PERMISSIONS.MEMBER_UPDATE_ROLE
+      );
+      
+      // Prevent the last admin from being demoted
+      if (targetUserOrg.role === UserRole.ADMIN && input.role !== UserRole.ADMIN) {
+        const adminCount = await ctx.db.userOrganization.count({
+          where: {
+            organizationId: input.organizationId,
+            role: UserRole.ADMIN,
+          },
+        });
+        
+        if (adminCount <= 1) {
+          throw new TRPCError({
+            code: "FORBIDDEN",
+            message: "Cannot remove the last admin from an organization",
+          });
+        }
+      }
+      
+      // Update the user's role
+      return await ctx.db.userOrganization.update({
+        where: {
+          userId_organizationId: {
+            userId: input.userId,
+            organizationId: input.organizationId,
+          },
+        },
+        data: { role: input.role },
+      });
+    }),
+    
+  // Remove a user from an organization (admin only)
+  removeUserFromOrganization: protectedProcedure
+    .input(removeUserFromOrganizationSchema)
+    .mutation(async ({ ctx, input }) => {
+      // Similar authorization and last admin protection
+      // ...
+    }),
+});
+```
+
 ## Testing Strategy
 
 ### Vitest Configuration
@@ -162,19 +338,18 @@ import { describe, it, expect } from "vitest";
 import { createCaller } from "~/server/api/root";
 import { db } from "~/server/db/__mocks__";
 
-describe("Post Router", () => {
-  it("should create and retrieve posts", async () => {
-    const caller = createCaller({ db, session: null, headers: new Headers() });
+describe("User Management Router", () => {
+  it("should update user role", async () => {
+    const caller = createCaller({ db, session: mockSession, headers: new Headers() });
     
     // This runs in a transaction and gets rolled back
-    const created = await caller.post.create({ 
-      title: "Test Post", 
-      content: "Test Content" 
+    const result = await caller.updateUserRole({ 
+      userId: "user123",
+      organizationId: "org456",
+      role: "ADMIN"
     });
-    const allPosts = await caller.post.all();
     
-    expect(allPosts).toHaveLength(1);
-    expect(allPosts[0]).toEqual(created);
+    expect(result.role).toEqual("ADMIN");
   });
 });
 ```
@@ -197,18 +372,6 @@ describe("SimpleComponent", () => {
 });
 ```
 
-**What to Skip**:
-- Complex UI interactions
-- Form validation flows
-- Animation and visual effects
-- Integration with external libraries
-
-**What to Test**:
-- Utility functions
-- Data transformation logic
-- Simple presentational components
-- Business logic in services
-
 ### Testing Best Practices
 
 1. **Use transactional testing** for database operations in tRPC procedures
@@ -218,4 +381,3 @@ describe("SimpleComponent", () => {
 5. **Keep component tests simple** and focused on rendering
 6. **Use integration tests** for critical user flows through tRPC
 7. **Prefer manual testing** for complex UI interactions
-

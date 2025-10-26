@@ -68,13 +68,20 @@ export function OrganizationList({
               <div>
                 <h3 className="font-medium text-gray-900">{org.name}</h3>
                 <p className="text-sm text-gray-500">/{org.slug}</p>
-                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                  org.role === "ADMIN"
-                    ? "bg-purple-100 text-purple-800"
-                    : "bg-gray-100 text-gray-800"
-                }`}>
-                  {org.role}
-                </span>
+                <div className="mt-2 flex items-center space-x-2">
+                  <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                    org.role === "ADMIN"
+                      ? "bg-purple-100 text-purple-800"
+                      : "bg-gray-100 text-gray-800"
+                  }`}>
+                    {org.role}
+                  </span>
+                  {org.role === "ADMIN" && (
+                    <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-blue-100 text-blue-800">
+                      Can manage members
+                    </span>
+                  )}
+                </div>
               </div>
               
               <div className="flex space-x-2">
