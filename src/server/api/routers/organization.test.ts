@@ -1,7 +1,6 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { describe, expect, it, vi, beforeEach } from "vitest";
 import { TRPCError } from "@trpc/server";
 import { organizationRouter } from "~/server/api/routers/organization";
-import { auth } from "~/server/auth";
 import { db } from "~/server/db";
 import { faker } from "@faker-js/faker";
 
@@ -12,8 +11,6 @@ vi.mock("~/server/db");
 vi.mock("~/server/auth", () => ({
   auth: vi.fn(),
 }));
-
-const mockAuth = vi.mocked(auth);
 
 describe("organizationRouter", () => {
   beforeEach(async () => {
@@ -74,7 +71,7 @@ describe("organizationRouter", () => {
       if (!user) throw new Error("No user found");
 
       // Create an existing organization
-      const existingOrg = await db.organization.create({
+      await db.organization.create({
         data: {
           name: "Existing Organization",
           slug: "test-org",

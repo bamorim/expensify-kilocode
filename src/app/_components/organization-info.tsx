@@ -21,7 +21,7 @@ export function OrganizationInfo({ organizationId }: OrganizationInfoProps) {
     onSuccess: () => {
       setIsEditing(false);
       setError("");
-      refetch();
+      void refetch();
     },
     onError: (error) => {
       setError(error.message);
@@ -53,7 +53,7 @@ export function OrganizationInfo({ organizationId }: OrganizationInfoProps) {
       <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-md">
         <div className="text-center py-8">
           <h3 className="mb-2 text-lg font-medium text-gray-900">Organization not found</h3>
-          <p className="text-gray-600">The organization you're looking for doesn't exist.</p>
+          <p className="text-gray-600">The organization you&apos;re looking for doesn&apos;t exist.</p>
         </div>
       </div>
     );

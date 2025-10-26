@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { api } from "~/trpc/react";
 import Link from "next/link";
 
@@ -20,12 +19,9 @@ interface OrganizationListProps {
 export function OrganizationList({ 
   currentOrganizationId 
 }: OrganizationListProps) {
-  const [error, setError] = useState("");
-  
   const {
     data: organizations = [],
     isLoading,
-    refetch,
   } = api.organization.getUserOrganizations.useQuery();
 
   if (isLoading) {
@@ -57,12 +53,6 @@ export function OrganizationList({
       <h2 className="mb-4 text-2xl font-bold text-gray-800">
         Your Organizations
       </h2>
-      
-      {error && (
-        <div className="mb-4 rounded-md bg-red-50 p-3 text-red-700">
-          {error}
-        </div>
-      )}
       
       <div className="space-y-3">
         {organizations.map((org: Organization) => (

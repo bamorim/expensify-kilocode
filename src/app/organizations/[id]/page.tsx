@@ -1,7 +1,7 @@
 import { OrganizationInfo } from "~/app/_components/organization-info";
 import { OrganizationMembers } from "~/app/_components/organization-members";
 import { auth } from "~/server/auth";
-import { redirect, notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 import { api, HydrateClient } from "~/trpc/server";
 
 interface OrganizationPageProps {

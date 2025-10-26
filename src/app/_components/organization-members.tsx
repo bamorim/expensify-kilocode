@@ -1,19 +1,16 @@
 "use client";
 
-import { useState } from "react";
 import { api } from "~/trpc/react";
+import Image from "next/image";
 
 interface OrganizationMembersProps {
   organizationId: string;
 }
 
 export function OrganizationMembers({ organizationId }: OrganizationMembersProps) {
-  const [error, setError] = useState("");
-  
   const {
     data: members = [],
     isLoading,
-    refetch,
   } = api.organization.getMembers.useQuery({ organizationId });
 
   if (isLoading) {
@@ -35,12 +32,6 @@ export function OrganizationMembers({ organizationId }: OrganizationMembersProps
         Organization Members
       </h2>
       
-      {error && (
-        <div className="mb-4 rounded-md bg-red-50 p-3 text-red-700">
-          {error}
-        </div>
-      )}
-      
       {members.length === 0 ? (
         <div className="text-center py-8">
           <p className="text-gray-600">No members found in this organization.</p>
@@ -54,22 +45,24 @@ export function OrganizationMembers({ organizationId }: OrganizationMembersProps
             >
               <div className="flex items-center space-x-3">
                 {member.user.image ? (
-                  <img
+                  <Image
                     src={member.user.image}
-                    alt={member.user.name || "User"}
-                    className="h-10 w-10 rounded-full"
+                    alt={member.user.name ?? "User"}
+                    width={40}
+                    height={40}
+                    className="rounded-full"
                   />
                 ) : (
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-300">
                     <span className="text-sm font-medium text-gray-600">
-                      {member.user.name?.charAt(0) || member.user.email?.charAt(0) || "U"}
+                      {member.user.name?.charAt(0) ?? member.user.email?.charAt(0) ?? "U"}
                     </span>
                   </div>
                 )}
                 
                 <div>
                   <h3 className="font-medium text-gray-900">
-                    {member.user.name || "Unknown User"}
+                    {member.user.name ?? "Unknown User"}
                   </h3>
                   <p className="text-sm text-gray-500">{member.user.email}</p>
                 </div>

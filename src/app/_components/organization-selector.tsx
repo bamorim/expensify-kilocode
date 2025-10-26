@@ -42,7 +42,7 @@ export function OrganizationSelector({
     };
   }, []);
 
-  const handleOrganizationSelect = (organizationId: string) => {
+  const handleOrganizationSelect = (_organizationId: string) => {
     // In a real implementation, you would update the session with the new organization
     // For now, we'll just refresh the page
     setIsOpen(false);
