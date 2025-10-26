@@ -18,7 +18,7 @@ interface OrganizationSelectorProps {
 
 export function OrganizationSelector({
   currentOrganizationId,
-  currentOrganizationName = "Select Organization",
+  currentOrganizationName,
 }: OrganizationSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -28,6 +28,13 @@ export function OrganizationSelector({
     data: organizations = [],
     isLoading,
   } = api.organization.getUserOrganizations.useQuery();
+
+  const { data: currentOrg } = api.organization.get.useQuery(
+    { id: currentOrganizationId ?? "" },
+    { enabled: !!currentOrganizationId }
+  );
+
+  const displayName = currentOrganizationName ?? currentOrg?.name ?? "Select Organization";
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -42,11 +49,10 @@ export function OrganizationSelector({
     };
   }, []);
 
-  const handleOrganizationSelect = (_organizationId: string) => {
-    // In a real implementation, you would update the session with the new organization
-    // For now, we'll just refresh the page
+  const handleOrganizationSelect = (organizationId: string) => {
+    // Redirect to the selected organization page
     setIsOpen(false);
-    router.refresh();
+    router.push(`/organizations/${organizationId}`);
   };
 
   if (isLoading) {
@@ -76,7 +82,7 @@ export function OrganizationSelector({
         onClick={() => setIsOpen(!isOpen)}
         className="flex h-10 w-48 items-center justify-between rounded-md border border-gray-300 bg-white px-3 py-2 text-sm hover:bg-gray-50 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
       >
-        <span className="truncate font-medium">{currentOrganizationName}</span>
+        <span className="truncate font-medium">{displayName}</span>
         <svg
           className={`ml-2 h-4 w-4 transform transition-transform ${
             isOpen ? "rotate-180" : ""

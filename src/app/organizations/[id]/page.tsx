@@ -23,25 +23,23 @@ export default async function OrganizationPage({ params }: OrganizationPageProps
 
   return (
     <HydrateClient>
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Organization Details</h1>
-            <p className="mt-2 text-gray-600">
-              View and manage your organization details and members.
-            </p>
-          </div>
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-gray-900">Organization Details</h2>
+          <p className="mt-2 text-gray-600">
+            View and manage your organization details and members.
+          </p>
+        </div>
 
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-            <div>
-              <h2 className="mb-4 text-xl font-semibold text-gray-800">Organization Information</h2>
-              <OrganizationInfo organizationId={params.id} />
-            </div>
-            
-            <div>
-              <h2 className="mb-4 text-xl font-semibold text-gray-800">Organization Members</h2>
-              <OrganizationMembers organizationId={params.id} />
-            </div>
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+          <div>
+            <h3 className="mb-4 text-xl font-semibold text-gray-800">Organization Information</h3>
+            <OrganizationInfo organizationId={params.id} />
+          </div>
+          
+          <div>
+            <h3 className="mb-4 text-xl font-semibold text-gray-800">Organization Members</h3>
+            <OrganizationMembers organizationId={params.id} />
           </div>
         </div>
       </div>
